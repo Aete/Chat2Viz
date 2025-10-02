@@ -20,8 +20,7 @@ const DescriptionText = styled.p`
 export default function Description() {
   return (
     <DescriptionText>
-      이 프로젝트는 서울의 물리적 환경과 도시 활동 등에 관한 데이터를 직관적으로
-      표현하고자 하는 시각화 실험입니다.
+      LLM을 활용한 도시 환경 모니터링 인터페이스
     </DescriptionText>
   );
 }

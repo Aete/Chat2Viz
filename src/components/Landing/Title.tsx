@@ -24,5 +24,5 @@ const TitleText = styled.h1`
 `;
 
 export default function Title() {
-  return <TitleText>DataTerrain</TitleText>;
+  return <TitleText>Chat2Viz</TitleText>;
 }

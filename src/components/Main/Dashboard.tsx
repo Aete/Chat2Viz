@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import Viz from "./Viz";
 import Panel from "./Panel/Panel";
+import Chat from "../Chat/Chat";
 
 const DashboardContainer = styled.div`
   display: flex;
@@ -21,7 +22,7 @@ const DashboardContainer = styled.div`
 const Dashboard = () => {
   return (
     <DashboardContainer>
-      <Panel />
+      <Chat />
       <Viz />
     </DashboardContainer>
   );

@@ -27,6 +27,17 @@ const PanelContainer = styled.div`
   }
 `;
 
+const LeftPanel = styled.div`
+  width: calc(100% - 210px);
+  height: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: white;
+`;
+
 const RightPanel = styled.div`
   width: 210px;
   height: 100%;
@@ -49,6 +60,7 @@ export default function Panel() {
   const layerTwoRecoilState = useRecoilState(LayerTwoState);
   return (
     <PanelContainer>
+      <LeftPanel />
       <RightPanel>
         <LayerSetting
           layer={"Layer 1"}
