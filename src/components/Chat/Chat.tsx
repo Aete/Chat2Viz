@@ -3,6 +3,8 @@ import ChatInput from "./ChatInput";
 import RowUser from "./RowUser";
 import RowAI from "./RowAI";
 import { useEffect, useState } from "react";
+import { getChatCompletionMapView } from "../../utils/openai";
+import { executeMapCommand } from "../../utils/mapCommands";
 
 const ChatContainer = styled.div`
   width: 400px;
@@ -27,22 +29,57 @@ export interface Chat {
 
 export default function Chat() {
   const [chat, setChat] = useState<Chat[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
-    if (chat.length && chat[chat.length - 1].role === "user") {
-      setTimeout(() => {
-        setChat((prev) => {
-          return [
+    if (chat.length && chat[chat.length - 1].role === "user" && !isLoading) {
+      const getAIResponse = async () => {
+        setIsLoading(true);
+        try {
+          const response = await getChatCompletionMapView(chat);
+
+          // AI 응답을 맵 명령으로 실행
+          const commandExecuted = executeMapCommand(response);
+
+          // 명령 실행 결과에 따라 다른 메시지 표시
+          let displayMessage = response;
+          if (commandExecuted) {
+            try {
+              const parsedCommand = JSON.parse(response);
+              const placeName = parsedCommand.payload?.placeName;
+              displayMessage = placeName
+                ? `${placeName}으로 이동했습니다.`
+                : "맵 위치를 변경했습니다.";
+            } catch {
+              displayMessage = "맵 위치를 변경했습니다.";
+            }
+          }
+
+          setChat((prev) => [
             ...prev,
-            { role: "assistant", content: "This is a response from AI." },
-          ];
-        });
-      }, 1000);
+            { role: "assistant", content: displayMessage },
+          ]);
+        } catch (error) {
+          console.error("AI 응답 오류:", error);
+          setChat((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "죄송합니다. 응답을 생성할 수 없습니다.",
+            },
+          ]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      getAIResponse();
     }
-  }, [chat]);
+  }, [chat, isLoading]);
 
   return (
     <ChatContainer>
-      <ChatInput handleInput={setChat} />
+      <ChatInput handleInput={setChat} disabled={isLoading} />
       <ChatLog>
         {chat.map((c, i) => {
           if (c.role === "user") {
@@ -51,6 +88,7 @@ export default function Chat() {
             return <RowAI key={`chat-${i}`} message={c.content} />;
           }
         })}
+        {isLoading && <RowAI message="AI가 응답을 생성 중입니다..." />}
       </ChatLog>
     </ChatContainer>
   );

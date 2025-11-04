@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import Viz from "./Viz";
-import Panel from "./Panel/Panel";
 import Chat from "../Chat/Chat";
 
 const DashboardContainer = styled.div`

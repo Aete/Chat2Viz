@@ -1,29 +1,18 @@
 import styled from "styled-components";
-import { useState, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import DeckGL from "@deck.gl/react";
-import {
-  FlyToInterpolator,
-  GeoJsonLayer,
-  LineLayer,
-  MapViewState,
-  ScatterplotLayer,
-} from "deck.gl";
+import { GeoJsonLayer, MapViewState } from "deck.gl";
+import { useMapStore } from "../../store";
+import { supabase } from "../../utils/supabase";
 import Map from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 // types
-import { PointData, SDotData, Column } from "../../types";
 import { FeatureCollection } from "geojson";
-
-// custom layers
-import ThreeTerrainLayer from "../../Terrain/layers/ThreeTerrainLayer";
 
 // datasets
 import seoulBoundary from "../../utils/data/seoul_simplified.json";
-import sampleData from "../../utils/data/sample_coord.json";
-import { useRecoilValue } from "recoil";
-import { LayerOneState, LayerTwoState } from "../../atoms";
 
 const Container = styled.div`
   position: sticky;
@@ -48,36 +37,29 @@ const Viz: React.FC = () => {
     }
   }, []);
 
-  const layerOneSetting = useRecoilValue(LayerOneState);
-  const layerTwoSetting = useRecoilValue(LayerTwoState);
+  const { viewState, setViewState } = useMapStore();
 
-  const layerOnePoints = (sampleData as SDotData[]).map(
-    (d: SDotData): PointData => ({
-      colorData: d[layerOneSetting.colorColumn],
-      heightData: d[layerOneSetting.heightColumn],
-      latitude: d[Column.LATITUDE],
-      longitude: d[Column.LONGITUDE],
-    })
-  );
+  // Supabase에서 환경 데이터 5줄 가져오기
+  useEffect(() => {
+    const fetchEnvironmentData = async () => {
+      try {
+        const { data: environment, error } = await supabase
+          .from("environment")
+          .select("*")
+          .limit(5);
 
-  const layerTwoPoints = (sampleData as SDotData[]).map(
-    (d: SDotData): PointData => ({
-      colorData: d[layerTwoSetting.colorColumn],
-      heightData: d[layerTwoSetting.heightColumn],
-      latitude: d[Column.LATITUDE],
-      longitude: d[Column.LONGITUDE],
-    })
-  );
+        if (error) {
+          console.error("데이터 가져오기 오류:", error);
+        } else {
+          console.log("환경 데이터 5줄:", environment);
+        }
+      } catch (err) {
+        console.error("예상치 못한 오류:", err);
+      }
+    };
 
-  const [viewState, setViewState] = useState({
-    latitude: 37.74133260423905,
-    longitude: 126.84686531067668,
-    bearing: -35.629453681710224,
-    pitch: 47.25535026658767,
-    zoom: 9,
-    transitionDuration: 1000,
-    transitionInterpolator: new FlyToInterpolator(),
-  } as MapViewState);
+    fetchEnvironmentData();
+  }, []);
 
   const SeoulGeoJsonLayer = new GeoJsonLayer({
     id: "seoul-geojson",
@@ -88,68 +70,10 @@ const Viz: React.FC = () => {
     filled: false,
   });
 
-  const TerrainLayer = new ThreeTerrainLayer({
-    id: "my-custom-terrain",
-    data: layerOnePoints,
-    height: 600,
-  });
-
-  const TerrainLayerTest = new ThreeTerrainLayer({
-    id: "my-custom-terrain-2",
-    data: layerTwoPoints,
-    height: 1200,
-  });
-
-  // handing hovering as a circle on the map
-  const [hoverPos, setHoverPos] = useState<[number, number] | null>(null);
-  const handleHover = useCallback(
-    (info: any) => {
-      const coord = info.coordinate || null;
-      if (
-        !hoverPos ||
-        coord === null ||
-        coord[0] !== hoverPos[0] ||
-        coord[1] !== hoverPos[1]
-      ) {
-        setHoverPos(coord);
-      }
-    },
-    [hoverPos]
-  );
-  const HoverCircleLayer = new ScatterplotLayer({
-    id: "hover-circle",
-    data: hoverPos ? [hoverPos] : [],
-    getPosition: (d) => d,
-    getRadius: 10,
-    radiusMinPixels: 10,
-    radiusMaxPixels: 10,
-    getFillColor: [255, 255, 255, 100],
-    pickable: false,
-  });
-
-  const HoverLineLayer = new LineLayer({
-    id: "hover-line",
-    data: hoverPos ? [hoverPos] : [],
-    getSourcePosition: (d) => [d[0], d[1], 0],
-    getTargetPosition: (d) => [d[0], d[1], 100000],
-    getColor: [255, 255, 255, 180],
-    getWidth: 2,
-    pickable: false,
-    parameters: {
-      cullMode: "none",
-    },
-  });
-
   const MAP_STYLE =
     "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
 
-  const layers = [
-    SeoulGeoJsonLayer,
-    HoverCircleLayer,
-    HoverLineLayer,
-    TerrainLayer,
-    TerrainLayerTest,
-  ];
+  const layers = [SeoulGeoJsonLayer];
 
   return (
     <Container onMouseDown={handleMouseDown}>
@@ -160,7 +84,6 @@ const Viz: React.FC = () => {
         onViewStateChange={({ viewState }) =>
           setViewState(viewState as MapViewState)
         }
-        onHover={handleHover}
       >
         <Map
           mapboxAccessToken={

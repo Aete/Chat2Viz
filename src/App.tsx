@@ -2,7 +2,6 @@ import styled from "styled-components";
 import { bgColor } from "./utils/colors";
 import Dashboard from "./components/Main/Dashboard";
 import Landing from "./components/Landing/Landing";
-import { RecoilRoot } from "recoil";
 
 const AppContainer = styled.div`
   width: 100vw;
@@ -24,11 +23,9 @@ const AppContainer = styled.div`
 
 export default function App() {
   return (
-    <RecoilRoot>
-      <AppContainer>
-        <Landing />
-        <Dashboard />
-      </AppContainer>
-    </RecoilRoot>
+    <AppContainer>
+      <Landing />
+      <Dashboard />
+    </AppContainer>
   );
 }
