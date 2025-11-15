@@ -58,7 +58,25 @@ const Viz: React.FC = () => {
       }
     };
 
+    const sensorData = async () => {
+      try {
+        const { data: sensors, error } = await supabase.rpc("nearby_sensors", {
+          lon: 126.9707,
+          lat: 37.5561,
+          dist: 1000, // 100m
+        });
+        if (error) {
+          console.error("데이터 가져오기 오류:", error);
+        } else {
+          console.log("센서 데이터 5줄:", sensors);
+        }
+      } catch (err) {
+        console.error("예상치 못한 오류:", err);
+      }
+    };
+
     fetchEnvironmentData();
+    sensorData();
   }, []);
 
   const SeoulGeoJsonLayer = new GeoJsonLayer({
