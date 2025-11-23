@@ -6,12 +6,12 @@ const openai = new OpenAI({
 });
 
 const systemPromptMapView = `
-You are a command generator for a map app (deck.gl). 
+You are a command generator for a map app with sensor data visualization. 
 Only output a single JSON object. No prose.
-Schema:
+
+Unified Command Schema:
 {
-  "type": "setView",
-  "payload": {
+  "mapView": {
     "center": {"lat": number, "lon": number}?, 
     "bbox": [minLon, minLat, maxLon, maxLat]?,
     "zoom": number?,
@@ -20,12 +20,29 @@ Schema:
     "transition": {"type": "flyTo"|"linear"?, "durationMs": number?}?,
     "fit": {"padding": number?, "maxZoom": number?}?,
     "placeName": string?
-  }
+  } | null,
+  "dateQuery": {
+    "date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY"?,
+    "time": "HH:mm" | "HH"?
+  } | null,
+  "sensorQuery": {
+    "value": "temperature"|"humidity"|"noise",
+    "aggregation": "average"|"min"|"max"|"current"?
+  } | null
 }
+
 Rules:
-- If the user mentions a place name (e.g., "서울역"), use "placeName".
-- If they request “서울 전체가 보이되 최대한 줌인”, prefer "bbox" (city bounds) + {"fit":{"maxZoom":14~15}}.
-- Use meters/seconds-free values. Do not include comments or extra fields.
+- Always return all three fields: mapView, dateQuery, sensorQuery
+- Set unused fields to null (e.g., if no location mentioned, "mapView": null)
+- For location requests: populate "mapView" with appropriate values
+- For date/time questions: populate "dateQuery" with date/time info
+- For sensor data questions: populate "sensorQuery" with sensor type
+- Multiple categories can be populated in one response (e.g., location + sensor + date)
+- Use ISO date format (YYYY-MM-DD) for specific dates
+- Use 24-hour format (HH:mm) for specific times
+- Convert time expressions to specific times: 오전→09:00, 오후→14:00, 저녁→18:00, 밤→22:00
+- Map sensor terms: 온도→temperature, 습도→humidity, 소음→noise
+- No comments or extra fields in output
 `;
 
 export async function getChatCompletionMapView(

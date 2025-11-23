@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import DeckGL from "@deck.gl/react";
 import { GeoJsonLayer, MapViewState } from "deck.gl";
@@ -30,6 +30,8 @@ const Container = styled.div`
 `;
 
 const Viz: React.FC = () => {
+  const deckRef = useRef<any>(null);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // 0 = left, 1 = middle, 2 = right
     if (e.button === 1) {
@@ -37,7 +39,7 @@ const Viz: React.FC = () => {
     }
   }, []);
 
-  const { viewState, setViewState } = useMapStore();
+  const { viewState, setViewState, setViewport } = useMapStore();
 
   // Supabase에서 환경 데이터 5줄 가져오기
   useEffect(() => {
@@ -96,12 +98,22 @@ const Viz: React.FC = () => {
   return (
     <Container onMouseDown={handleMouseDown}>
       <DeckGL
+        ref={deckRef}
         viewState={viewState}
         controller={true}
         layers={layers}
-        onViewStateChange={({ viewState }) =>
-          setViewState(viewState as MapViewState)
-        }
+        onViewStateChange={({ viewState }) => {
+          setViewState(viewState as MapViewState);
+        }}
+        onAfterRender={() => {
+          // DeckGL 렌더링 후 viewport 정보 업데이트
+          if (deckRef.current && deckRef.current.deck) {
+            const viewport = deckRef.current.deck.getViewports()[0];
+            if (viewport) {
+              setViewport(viewport);
+            }
+          }
+        }}
       >
         <Map
           mapboxAccessToken={
