@@ -9,6 +9,7 @@ import {
   useMapStore,
   useGetSensorsInBounds,
   useSetFilteredSensors,
+  useFetchEnvironmentAvgBySensors
 } from "../../store";
 
 const ChatContainer = styled.div`
@@ -32,12 +33,37 @@ export interface Chat {
   content: string;
 }
 
+const safeParseResponse = (raw: string): Record<string, any> | null => {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const normalizeDateTimeInput = (value?: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const withT = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
+  const hasTimezone = /([+-]\d{2}:?\d{2}|Z)$/i.test(withT);
+  if (hasTimezone) {
+    return withT;
+  }
+
+  const segmentCount = withT.split(":").length;
+  const withSeconds = segmentCount >= 3 ? withT : `${withT}:00`;
+  return `${withSeconds}Z`;
+};
+
 export default function Chat() {
   const [chat, setChat] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { getBoundingBox } = useMapStore();
   const getSensorsInBounds = useGetSensorsInBounds();
   const setFilteredSensors = useSetFilteredSensors();
+  const fetchEnvironmentAvgBySensors = useFetchEnvironmentAvgBySensors();
 
   useEffect(() => {
     if (chat.length && chat[chat.length - 1].role === "user" && !isLoading) {
@@ -48,6 +74,14 @@ export default function Chat() {
 
           // AI 응답을 맵 명령으로 실행
           const commandExecuted = executeMapCommand(response);
+          const parsedPayload = safeParseResponse(response);
+          const normalizedStartTime = normalizeDateTimeInput(
+            parsedPayload?.dateQuery?.startDateTime
+          );
+          const normalizedEndTime = normalizeDateTimeInput(
+            parsedPayload?.dateQuery?.endDateTime
+          );
+          const sensorParameter = parsedPayload?.sensorQuery?.value ?? null;
 
           console.log(response);
 
@@ -87,10 +121,36 @@ export default function Chat() {
                 console.log(
                   `Found ${sensorsInBounds.length} sensors in the current view`
                 );
+
+                if (
+                  !normalizedStartTime ||
+                  !normalizedEndTime ||
+                  !sensorParameter
+                ) {
+                  setFilteredSensors(bounds);
+                  setChat((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: "관심 있는 데이터와 날짜를 입력해주세요.",
+                    },
+                  ]);
+                  return;
+                }
+
+                // Fetch environment data for sensors in bounds
+                const sensorIds = sensorsInBounds.map((sensor) => sensor.serial);
+                const environmentData = await fetchEnvironmentAvgBySensors(
+                  sensorIds,
+                  normalizedStartTime,
+                  normalizedEndTime,
+                  sensorParameter
+                );
+
                 // Update filtered sensors to show only sensors in current view
                 setFilteredSensors(bounds);
               } catch (error) {
-                console.error("❌ Error getting sensors in bounds:", error);
+                console.error("❌ Error getting sensors in bounds or fetching data:", error);
               }
             }, 2500); // 맵 애니메이션 끝나는 시간 고려
           }
@@ -98,14 +158,13 @@ export default function Chat() {
           // 명령 실행 결과에 따라 다른 메시지 표시
           let displayMessage = response;
           if (commandExecuted) {
-            try {
-              const parsedCommand: any = JSON.parse(response);
+            if (parsedPayload) {
               const placeName =
-                parsedCommand?.payload?.placeName ?? parsedCommand?.mapView?.placeName;
+                parsedPayload?.payload?.placeName ?? parsedPayload?.mapView?.placeName;
               displayMessage = placeName
                 ? `${placeName}으로 이동했습니다.`
                 : "맵 위치를 변경했습니다.";
-            } catch {
+            } else {
               displayMessage = "맵 위치를 변경했습니다.";
             }
           }

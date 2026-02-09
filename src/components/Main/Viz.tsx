@@ -1,10 +1,9 @@
 import styled from "styled-components";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 
 import DeckGL from "@deck.gl/react";
 import { GeoJsonLayer, MapViewState } from "deck.gl";
 import { useMapStore } from "../../store";
-import { supabase } from "../../utils/supabase";
 import Map from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -40,46 +39,6 @@ const Viz: React.FC = () => {
   }, []);
 
   const { viewState, setViewState, setViewport } = useMapStore();
-
-  // Supabase에서 환경 데이터 5줄 가져오기
-  useEffect(() => {
-    const fetchEnvironmentData = async () => {
-      try {
-        const { data: environment, error } = await supabase
-          .from("environment")
-          .select("*")
-          .limit(5);
-
-        if (error) {
-          console.error("데이터 가져오기 오류:", error);
-        } else {
-          console.log("환경 데이터 5줄:", environment);
-        }
-      } catch (err) {
-        console.error("예상치 못한 오류:", err);
-      }
-    };
-
-    const sensorData = async () => {
-      try {
-        const { data: sensors, error } = await supabase.rpc("nearby_sensors", {
-          lon: 126.9707,
-          lat: 37.5561,
-          dist: 1000, // 100m
-        });
-        if (error) {
-          console.error("데이터 가져오기 오류:", error);
-        } else {
-          console.log("센서 데이터 5줄:", sensors);
-        }
-      } catch (err) {
-        console.error("예상치 못한 오류:", err);
-      }
-    };
-
-    fetchEnvironmentData();
-    sensorData();
-  }, []);
 
   const SeoulGeoJsonLayer = new GeoJsonLayer({
     id: "seoul-geojson",

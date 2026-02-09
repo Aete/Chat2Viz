@@ -18,4 +18,5 @@ export {
   useClearFilter,
   useGetSensorsInBounds,
   useInitializeData,
+  useFetchEnvironmentAvgBySensors,
 } from "./sensorStore";

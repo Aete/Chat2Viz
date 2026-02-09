@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import sensorData from "../utils/data/s_dot_coord.json";
+import { supabase } from "../utils/supabase"; // Import Supabase client
 
 // S-DoT sensor data type definition
 export interface SensorData {
@@ -37,6 +38,12 @@ interface SensorStoreState {
     maxLon: number;
   }) => SensorData[];
   initializeData: () => void;
+  fetchEnvironmentAvgBySensors: (
+    sensorIds: string[],
+    startTime: string,
+    endTime: string,
+    parameter: string
+  ) => Promise<SensorData | null>;
 }
 
 const useSensorStore = create<SensorStoreState>((set, get) => {
@@ -119,6 +126,34 @@ const useSensorStore = create<SensorStoreState>((set, get) => {
 
     // Re-initialize data (mainly for testing or manual refresh)
     initializeData,
+
+    // Fetch average environmental data by sensors and time range
+    fetchEnvironmentAvgBySensors: async (
+      sensorIds: string[],
+      startTime: string,
+      endTime: string,
+      parameter: string
+    ) => {
+      try {
+        console.log('test', sensorIds, startTime, endTime, parameter);
+        const { data, error } = await supabase.rpc("environment_avg_by_sensors", {
+          p_sensor_serials: sensorIds,
+          p_start: startTime,
+          p_end: endTime,
+          p_value: parameter,
+        });
+
+        if (error) {
+          console.error("Error fetching environment averages:", error);
+          return null;
+        }
+
+        return data;
+      } catch (err) {
+        console.error("Unexpected error fetching environment averages:", err);
+        return null;
+      }
+    },
   };
 });
 
@@ -145,3 +180,7 @@ export const useGetSensorsInBounds = () =>
   useSensorStore((state) => state.getSensorsInBounds);
 export const useInitializeData = () =>
   useSensorStore((state) => state.initializeData);
+
+// Export the new function
+export const useFetchEnvironmentAvgBySensors = () =>
+  useSensorStore((state) => state.fetchEnvironmentAvgBySensors);
