@@ -49,6 +49,8 @@ export default function Chat() {
           // AI 응답을 맵 명령으로 실행
           const commandExecuted = executeMapCommand(response);
 
+          console.log(response);
+
           // 맵이 변경되었으면 bounding box 기반으로 센서 조회
           if (commandExecuted) {
             setTimeout(async () => {
@@ -97,8 +99,9 @@ export default function Chat() {
           let displayMessage = response;
           if (commandExecuted) {
             try {
-              const parsedCommand = JSON.parse(response);
-              const placeName = parsedCommand.payload?.placeName;
+              const parsedCommand: any = JSON.parse(response);
+              const placeName =
+                parsedCommand?.payload?.placeName ?? parsedCommand?.mapView?.placeName;
               displayMessage = placeName
                 ? `${placeName}으로 이동했습니다.`
                 : "맵 위치를 변경했습니다.";

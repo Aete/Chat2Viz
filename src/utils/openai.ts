@@ -22,12 +22,12 @@ Unified Command Schema:
     "placeName": string?
   } | null,
   "dateQuery": {
-    "date": "YYYY-MM-DD" | "YYYY-MM" | "YYYY"?,
-    "time": "HH:mm" | "HH"?
+    "unit": "yearly"|"monthly"|"weekly"|"daily"|"hourly"?,
+    "startDateTime": "YYYY-MM-DD HH:mm"?,
+    "endDateTime": "YYYY-MM-DD HH:mm"?
   } | null,
   "sensorQuery": {
     "value": "temperature"|"humidity"|"noise",
-    "aggregation": "average"|"min"|"max"|"current"?
   } | null
 }
 
@@ -38,9 +38,11 @@ Rules:
 - For date/time questions: populate "dateQuery" with date/time info
 - For sensor data questions: populate "sensorQuery" with sensor type
 - Multiple categories can be populated in one response (e.g., location + sensor + date)
-- Use ISO date format (YYYY-MM-DD) for specific dates
-- Use 24-hour format (HH:mm) for specific times
-- Convert time expressions to specific times: 오전→09:00, 오후→14:00, 저녁→18:00, 밤→22:00
+- Use ISO datetime format (YYYY-MM-DD HH:mm) for specific times
+- For time ranges, set appropriate startDateTime and endDateTime
+- Always use year 2023 for all dates (e.g., "2023-03-15", "2023-01", "2023")
+- Convert time expressions: 오전→09:00, 오후→14:00, 저녁→18:00, 밤→22:00
+- Set unit based on query scope: single day→daily, week period→weekly, month→monthly, year→yearly, specific hours→hourly
 - Map sensor terms: 온도→temperature, 습도→humidity, 소음→noise
 - No comments or extra fields in output
 `;
