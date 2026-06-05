@@ -1,8 +1,6 @@
 # Chat2Viz
 > **This project is currently under development.  
 > You can check the latest updates and live demo at the link below:**  
->
-> [https://seoul-data-terrain.netlify.app/](https://seoul-data-terrain.netlify.app/)
 
 ## Background
 
